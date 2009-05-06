@@ -1,4 +1,4 @@
 h1. qik
 
-qik is an personal knowledge base python web app build on the "google app engine":http://appengine.google.com
+qik is a personal knowledge base python web app built on the "google app engine":http://appengine.google.com
 platform
