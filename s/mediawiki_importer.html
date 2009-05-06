@@ -1,0 +1,127 @@
+<html>
+  <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+  <!-- NOTE: Remove no cache in production -->
+  <META HTTP-EQUIV="CACHE-CONTROL" CONTENT="NO-CACHE">
+  <META HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">
+  <title>Mediawiki Importer</title>
+
+ 	<link rel="stylesheet" type="text/css" href="/s/libs/ext-2.2/resources/css/ext-all.css" />
+ 	<link rel="stylesheet" type="text/css" href="/s/libs/ext-2.2/resources/css/xtheme-gray.css" />
+	<link rel="stylesheet" type="text/css" href="/s/stylesheets/kb.css" />
+ 	
+	<script type="text/javascript" src="/s/libs/ext-2.2/adapter/ext/ext-base.js"></script>
+ 	<script type="text/javascript" src="/s/libs/ext-2.2/ext-all.js"></script>
+	<script type="text/javascript" src="/s/libs/jquery/jquery-1.2.6.js"></script>
+	<script type="text/javascript" src="/s/libs/ext-extensions/Ext.ux.ManagedIframe/miframe.js"></script>
+	<script type="text/javascript" src="/s/javascripts/textilize.js"></script>
+	<script type="text/javascript" src="/s/javascripts/wikitext_to_html_converter.js"></script>
+	<script type="text/javascript">
+
+	$(function() {
+		
+		function l(s) {
+			$('<div>' + s + '</div>').prependTo('#log');
+		}
+		
+		var counter = 0;
+		var items = [];
+
+		
+		function import_items() {
+			
+			if (items.length > 0) {
+				item = items.pop();
+				l('starting - ' + item.title);
+				try {
+	          	Ext.Ajax.request({
+	            	url: '/items.json',
+	            	method: 'POST',
+	            	jsonData: item,
+	            	success: function(response,config) {
+						obj = Ext.decode(response.responseText);
+						counter += 1;
+	              		l(counter + ' - ' + obj.title);
+						import_items();
+					}
+				});
+				} catch (e) {
+					l(e.toString());
+				}				
+			}
+		}
+		
+		function parseCategories(s) {
+			regex = /.*\[\[Category:(.*)\]\].*/g;
+			a = [];
+			while( (result = regex.exec(s)) != null ) {
+				a.push( result[1].toLowerCase() );
+			}
+			return a;
+		}
+
+		function parseTags(s) {
+			c = parseCategories(s);
+			return c.join(',');
+		}		
+		
+		$('#import').click(function() {
+			url = $('#url').val();
+			$.get('/proxy/' + url, function(data) {
+				var counter = 0;
+				$('page', data).each(function(index, e) {
+					item = {};
+					item.title = $('title', e).text();
+					item.body = $('text', e).text();
+					item.encoding = 'wikitext';
+					item.tags = parseTags(item.body);
+					l( item.tags );
+					
+					// exclude importing Image and Category mediawiki entries
+					if( !item.title.match(/(.*:.*)/) ) {
+						/*
+						var response = $.ajax({
+							url: '/items.json',
+							type: 'POST',
+							data: item,
+							async: false,
+						}).responseText;
+						obj = Ext.decode(response);
+						counter += 1;
+						l(counter + ' - ' + obj.title);
+						*/
+						items.push(item);
+					}
+				});
+				
+				import_items();
+			});
+		});
+		
+		$('#delete').click(function() {
+			$.ajax({
+				type: 'DELETE',
+				url: '/items.json',
+				success: function(result) {
+					l(result);
+				}
+			});
+		});
+		
+	});
+	</script>
+
+</head>
+<body>
+  <h1>Mediawiki Importer</h1>
+  <div id="content">
+  	source url (mediawiki xml export file): <input id='url' type='text' size='80' value='http://wiki.brianpfeil.com/dump.xml'></input>
+	<input id='import' type='button' value='import'></input>
+	<br/>
+	<br/>
+	Delete all items: <input id='delete' type='button' value='delete'></input>
+	<div id='log' />
+  </div>
+</body>
+</html>

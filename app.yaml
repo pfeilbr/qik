@@ -1,0 +1,11 @@
+application: qik
+version: 0
+runtime: python
+api_version: 1
+ 
+handlers:
+  - url:  /s
+    static_dir: s
+  - url:  .*
+    script: main.py
+
