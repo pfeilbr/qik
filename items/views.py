@@ -40,7 +40,7 @@ def json_response(json):
     return response
     
 def is_admin(request):
-    return false
+    return 0
     #return ("pw" in request.REQUEST) and (request.REQUEST["pw"] == "<password here>")
     
 def is_authenticated(request):
